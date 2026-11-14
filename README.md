@@ -17,7 +17,7 @@ O fluxo é composto por 6 etapas principais em sequência:
 [Gmail Trigger] ➔ [Message a Model (Gemini)] ➔ [Code (Parse JSON)] ➔ [Get Many Labels] ➔ [Code (Mapeamento ID)] ➔ [Add Label to Message]
 ```
 
-Descrição dos Nós:
+## Descrição dos Nós:
 Gmail Trigger (Message Received): Monitora continuamente a caixa de entrada para detectar novos e-mails.
 
 Message a Model (Google Gemini): Analisa o assunto, remetente e corpo do e-mail, classificando a mensagem em uma categoria predefinida e retornando uma resposta estritamente estruturada em JSON.
@@ -30,7 +30,7 @@ Code in JavaScript (Mapeamento ID): Cruza o nome da categoria gerada pela IA com
 
 Add Label to Message (Gmail API): Aplica exclusivamente a etiqueta correspondente ao e-mail analisado.
 
-🛠️ Tecnologias Utilizadas
+## 🛠️ Tecnologias Utilizadas
 n8n (Self-Hosted): Motor de automação executado em um container local via Docker Desktop.
 
 Docker & Docker Compose: Gerenciamento e persistência do ambiente de automação.
@@ -41,21 +41,21 @@ Gmail API & OAuth2: Integração segura com a infraestrutura do Google Cloud Con
 
 JavaScript (Node.js): Manipulação de estruturas de dados e tratamento de exceções no n8n.
 
-🚀 Desafios Técnicos Resolvidos
+## 🚀 Desafios Técnicos Resolvidos
 Resolução do Erro 403 (Access Denied) no OAuth2: Configuração detalhada da Tela de Consentimento OAuth no Google Cloud Console com inclusão de Test Users autorizados para o ambiente local (http://localhost:5678).
 
 Mapeamento Dinâmico de IDs de Marcadores: A API do Gmail rejeita nomes de texto simples (ex: "Faculdade") ao aplicar marcadores via expressão. A arquitetura foi desenvolvida para consultar os marcadores em tempo real (Get Many Labels) e realizar a correspondência pelo ID interno do Google (Label_ID), evitando atribuições estáticas ou aplicação múltipla indevida de etiquetas.
 
 Tratamento de Payload e Limites de API: Definição de limites de paginação (Limit: 100) para garantir que marcadores pessoais não fossem omitidos pelas categorias padrão do sistema Gmail.
 
-📊 Impacto de Negócio e Métricas (Estimadas)
+## 📊 Impacto de Negócio e Métricas (Estimadas)
 Economia de Tempo: ~1,5 a 2 horas semanais gastas em triagem manual e organização da caixa de entrada.
 
 Tempo de Resposta: Redução do tempo de identificação de e-mails prioritários/urgentes para menos de 30 segundos após o recebimento.
 
 Precisão de Classificação: >95% de assertividade na categorização automática usando o modelo Gemini 1.5 Flash.
 
-🔧 Como Executar este Projeto Localmente
+## 🔧 Como Executar este Projeto Localmente
 Pré-requisitos
 Docker Desktop instalado.
 
@@ -75,5 +75,5 @@ Configure as credenciais de Google OAuth2 API (Gmail) e Google Gemini API Key.
 
 Ative o fluxo clicando em Publish.
 
-📝 Licença
-Este projeto foi desenvolvido para fins de portfólio na trilha AI Builder.
+## 📝 Licença
+Este projeto foi desenvolvido para fins de portfólio.
