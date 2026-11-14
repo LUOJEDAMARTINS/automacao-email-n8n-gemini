@@ -1,0 +1,202 @@
+{
+  "name": "Automação Inteligente de Triagem e Classificação de E-mails",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "1ede9b0e-0abe-4e29-b6d4-3ebcb8df34d3",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "rVxDGBOwmMLCkX6A",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Você é um assistente encarregado de classificar e-mails. Analise o e-mail abaixo e responda APENAS com um JSON válido, sem texto extra:\n\n{\n  \"categoria\": \"...\",\n  \"urgencia\": \"alta|media|baixa\",\n  \"resumo\": \"...\"\n}\n\nCategorias permitidas: Urgente, Faculdade, Vagas, Financeiro, Newsletter, Promoções, Outros.\n\nE-mail para análise:\nAssunto: {{ $json.subject }}\nRemetente: {{ $json.from.text }}\nConteúdo: {{ $json.textAsSimple }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "5bad3cfb-a275-4128-bd22-72ce328ea21f",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ayUaY0KudN3pKEpT",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let rawText = \"\";\n\nif ($input.item.json.content && $input.item.json.content.parts) {\n  rawText = $input.item.json.content.parts[0].text;\n} else if ($input.item.json.text) {\n  rawText = $input.item.json.text;\n} else {\n  rawText = JSON.stringify($input.item.json);\n}\n\nrawText = rawText.replace(/```json/g, \"\").replace(/```/g, \"\").trim();\n\nlet categoria = \"Outros\";\n\ntry {\n  const parsed = JSON.parse(rawText);\n  if (parsed.categoria) {\n    categoria = parsed.categoria;\n  }\n} catch (e) {\n  categoria = \"Outros\";\n}\n\nreturn {\n  categoria: categoria\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "85635c00-b886-46f9-8ee8-9a087acc86d0",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "label"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        0
+      ],
+      "id": "da3ebc0e-b6db-4f0e-a71c-f5d19edd1bf0",
+      "name": "Get many labels",
+      "webhookId": "a809dae4-a0ba-4c80-b8d0-8137350616ef",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "rVxDGBOwmMLCkX6A",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Procura a categoria gerada pela IA (pega do nó de código anterior, qualquer que seja o nome)\nlet categoriaIA = \"Outros\";\n\ntry {\n  // Procura o nó Code anterior que fez o parse da categoria\n  const nodeCodeAnterior = $('Code in JavaScript') || $('Code');\n  if (nodeCodeAnterior && nodeCodeAnterior.item && nodeCodeAnterior.item.json.categoria) {\n    categoriaIA = nodeCodeAnterior.item.json.categoria;\n  }\n} catch (e) {\n  categoriaIA = \"Outros\";\n}\n\n// 2. Lê a lista completa de 22 marcadores retornada pelo nó 'Get many labels'\nconst labelsDoGmail = $('Get many labels').all();\n\n// 3. Encontra a etiqueta correspondente pelo nome\nlet labelEncontrada = labelsDoGmail.find(item => \n  item.json.name && item.json.name.toLowerCase() === categoriaIA.toLowerCase()\n);\n\n// Fallback: se não encontrar exato, usa a etiqueta \"Outros\"\nif (!labelEncontrada) {\n  labelEncontrada = labelsDoGmail.find(item => \n    item.json.name && item.json.name.toLowerCase() === \"outros\"\n  );\n}\n\nreturn {\n  categoriaNome: categoriaIA,\n  labelId: labelEncontrada ? labelEncontrada.json.id : null\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        0
+      ],
+      "id": "ea8753f4-abf0-45c6-a299-31149265808c",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Gmail Trigger').first().json.id }}",
+        "labelIds": "={{ [$json.labelId] }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        0
+      ],
+      "id": "a73c9ac8-fef9-4e45-916e-94d282b3b004",
+      "name": "Add label to message",
+      "webhookId": "d257b0e1-ff9a-4a63-abf0-642eabcb7b2a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "rVxDGBOwmMLCkX6A",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get many labels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many labels": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Add label to message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "607a55e5-7d6b-4280-9243-b744a962cd60",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b6609f60360629a627302682c8d038cae2d8c065acfdd3fbd095aa5a618b6049"
+  },
+  "nodeGroups": [],
+  "id": "NcDu6IRW2CvNs0xp",
+  "tags": []
+}
