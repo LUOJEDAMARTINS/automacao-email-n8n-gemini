@@ -15,6 +15,7 @@ O fluxo é composto por 6 etapas principais em sequência:
 
 ```text
 [Gmail Trigger] ➔ [Message a Model (Gemini)] ➔ [Code (Parse JSON)] ➔ [Get Many Labels] ➔ [Code (Mapeamento ID)] ➔ [Add Label to Message]
+```
 
 Descrição dos Nós:
 Gmail Trigger (Message Received): Monitora continuamente a caixa de entrada para detectar novos e-mails.
